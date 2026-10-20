@@ -377,8 +377,8 @@ legend{font-family:var(--f-display);font-weight:700;font-size:18px;padding:0 6px
     sel.value=(cur&&(qMap.has(cur)||(cur==='_none'&&hasNone)))?cur:'';
     sel.hidden=!sorted.length;
   }
-  let collapsed={};
-  try{collapsed=JSON.parse(localStorage.getItem('ep_collapsed')||'{}')||{};}catch(e){collapsed={};}
+  // Quartiers fermés à chaque ouverture de l'appli ; ceux qu'on ouvre restent ouverts jusqu'à la fermeture
+  const opened={};
 
   // ---------- rendu liste ----------
   function render(){
@@ -400,7 +400,7 @@ legend{font-family:var(--f-display);font-weight:700;font-size:18px;padding:0 6px
     const keys=Array.from(groups.keys()).sort((x,y)=>x===''?1:y===''?-1:qLabel(x).localeCompare(qLabel(y),'fr'));
     const forceOpen=!!q||!!fq;
     list.innerHTML='<div class="groups">'+keys.map(k=>{
-      const arr=groups.get(k), open=forceOpen||!collapsed[k||'_none'];
+      const arr=groups.get(k), open=forceOpen||!!opened[k||'_none'];
       return '<section class="group'+(k?'':' none')+'">'+
         '<button type="button" class="ghead" data-g="'+esc(k||'_none')+'" aria-expanded="'+open+'">'+
         '<span class="gname">'+(k?hl(qLabel(k),q):'Sans quartier')+'</span>'+
@@ -431,8 +431,7 @@ legend{font-family:var(--f-display);font-weight:700;font-size:18px;padding:0 6px
     const g=e.target.closest('[data-g]');
     if(g){
       if($('q').value.trim()||$('fq').value) return;
-      const k=g.getAttribute('data-g'); collapsed[k]=!collapsed[k];
-      try{localStorage.setItem('ep_collapsed',JSON.stringify(collapsed));}catch(err){}
+      const k=g.getAttribute('data-g'); opened[k]=!opened[k];
       render(); return;
     }
     const v=e.target.closest('[data-view]');
