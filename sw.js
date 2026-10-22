@@ -1,16 +1,17 @@
 // Armoires EP - fonctionnement hors ligne
 // Change le numéro de version à chaque mise à jour de l'appli.
-const VERSION = 'armoires-ep-v1';
+const PREFIXE = 'armoires-ep-';
+const VERSION = PREFIXE + 'v2';
 const FICHIERS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FICHIERS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FICHIERS.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k.startsWith(PREFIXE) && k !== VERSION).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -22,7 +23,8 @@ self.addEventListener('fetch', e => {
   // Page de l'appli : réseau d'abord (pour avoir les mises à jour), sinon la copie hors ligne
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then(r => {
+      // toujours la dernière version quand il y a du réseau (sans la copie de 10 min du navigateur)
+      fetch(req, { cache: 'no-store' }).then(r => {
         const copie = r.clone();
         caches.open(VERSION).then(c => c.put('./index.html', copie));
         return r;
